@@ -1,0 +1,134 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id           String    @id @default(cuid())
+  googleId     String    @unique
+  email        String    @unique
+  name         String?
+  avatarUrl    String?
+  // Parte local do endereço de encaminhamento (ex: <inboundToken>@faturas.dominio.com).
+  // Aleatório e não adivinhável: quem conhece o endereço consegue enviar faturas para a conta.
+  inboundToken String    @unique
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  sessions      Session[]
+  invoices      Invoice[]
+  categoryRules CategoryRule[]
+
+  @@map("users")
+}
+
+// Uma sessão por dispositivo/login. O refresh token é rotacionado a cada uso;
+// guardamos apenas o hash dele, nunca o valor.
+model Session {
+  id                       String    @id @default(cuid())
+  userId                   String
+  user                     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  refreshTokenHash         String    @unique
+  // Hash do token anterior à última rotação, para distinguir corrida entre abas de roubo de token.
+  previousRefreshTokenHash String?
+  rotatedAt                DateTime?
+  userAgent                String?
+  ip                       String?
+  createdAt                DateTime  @default(now())
+  lastUsedAt               DateTime  @default(now())
+  expiresAt                DateTime
+  revokedAt                DateTime?
+
+  @@index([userId])
+  @@map("sessions")
+}
+
+model Category {
+  id           String        @id @default(cuid())
+  name         String
+  slug         String        @unique
+  color        String
+  transactions Transaction[]
+  rules        CategoryRule[]
+
+  @@map("categories")
+}
+
+// "Sempre que aparecer este estabelecimento, use esta categoria." Criada quando o usuário categoriza.
+model CategoryRule {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  merchantKey String // nome normalizado do estabelecimento (ver merchantKeyOf)
+  categoryId  String
+  category    Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([userId, merchantKey])
+  @@map("category_rules")
+}
+
+enum CategorySource {
+  SYSTEM_RULE
+  USER_RULE
+  MANUAL
+}
+
+model Invoice {
+  id             String        @id @default(cuid())
+  userId         String
+  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  issuer         String // banco/cartão emissor, ex: "nubank"
+  referenceMonth String // "2026-10", mês do vencimento
+  dueDate        DateTime      @db.Date
+  closingDate    DateTime      @db.Date
+  periodStart    DateTime      @db.Date
+  periodEnd      DateTime      @db.Date
+  totalCents     Int
+  sourceFile     String? // chave do PDF original no armazenamento
+  fileHash       String? // SHA-256 do PDF importado
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  transactions   Transaction[]
+
+  @@unique([userId, issuer, referenceMonth])
+  @@map("invoices")
+}
+
+enum TransactionKind {
+  PURCHASE
+  REFUND
+  IOF
+  FEE
+  PAYMENT
+}
+
+model Transaction {
+  id                 String          @id @default(cuid())
+  invoiceId          String
+  invoice            Invoice         @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  position           Int // ordem em que aparece na fatura
+  date               DateTime        @db.Date
+  description        String
+  merchantKey        String // nome normalizado do estabelecimento, para agrupar e casar regras
+  // Positivo = cobrança; negativo = crédito (pagamento, estorno).
+  amountCents        Int
+  kind               TransactionKind
+  cardLast4          String?
+  installmentCurrent Int?
+  installmentTotal   Int?
+  foreignCurrency    String?
+  foreignAmountCents Int?
+  categoryId         String?
+  category           Category?       @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  categorySource     CategorySource?
+
+  @@index([invoiceId])
+  @@index([categoryId])
+  @@index([merchantKey])
+  @@map("transactions")
+}

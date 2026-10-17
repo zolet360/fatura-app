@@ -1,0 +1,6 @@
+# Repositório sempre em LF; cada sistema converte na cópia de trabalho se precisar.
+* text=auto eol=lf
+
+*.ico binary
+*.png binary
+*.pdf binary

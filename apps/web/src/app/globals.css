@@ -1,0 +1,60 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+  /* Avisa o navegador que o site tem tema escuro: controles nativos (lista do select,
+     barras de rolagem, inputs) passam a ser desenhados no tema certo. */
+  color-scheme: light dark;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+/* Paleta dos gráficos (validada com o validador de CVD/contraste contra as superfícies
+   dos cards: #ffffff no claro, zinc-900 #18181b no escuro). Os gráficos leem estes tokens
+   via useVizTheme; não use estas cores em texto, só em marcas (barras, linhas, pontos). */
+:root {
+  --viz-surface: #ffffff;
+  --viz-ink: #0b0b0b;
+  --viz-ink-secondary: #52514e;
+  --viz-muted: #898781;
+  --viz-grid: #e1e0d9;
+  --viz-axis: #c3c2b7;
+  --viz-accent: #2a78d6;
+  --viz-context: #c3c2b7;
+  --viz-increase: #e34948;
+  --viz-decrease: #2a78d6;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --viz-surface: #18181b;
+    --viz-ink: #f0efec;
+    --viz-ink-secondary: #c3c2b7;
+    --viz-muted: #898781;
+    --viz-grid: #2c2c2a;
+    --viz-axis: #383835;
+    --viz-accent: #3987e5;
+    --viz-context: #52514e;
+    --viz-increase: #e66767;
+    --viz-decrease: #3987e5;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+}

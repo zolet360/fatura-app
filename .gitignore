@@ -1,0 +1,19 @@
+node_modules/
+dist/
+.next/
+out/
+coverage/
+
+# Client do Prisma é gerado a partir do schema (npm run db:generate)
+apps/api/src/generated/
+
+.env
+.env.*
+!.env.example
+
+# PDFs de faturas nunca vão pro repositório
+storage/
+*.pdf
+
+*.log
+.DS_Store
